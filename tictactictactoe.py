@@ -3,12 +3,12 @@ import Queue
 import copy
 
 ########globals###########################
-board = [['O',' ',' ',' ',' ',' ',' ',' ',' '],
-         [' ',' ','X',' ',' ',' ',' ',' ',' '],
-         [' ','X',' ',' ',' ',' ',' ',' ',' '],
-         [' ',' ',' ',' ',' ',' ','O',' ',' '],
+board = [[' ',' ',' ',' ',' ',' ',' ',' ',' '],
          [' ',' ',' ',' ',' ',' ',' ',' ',' '],
-         [' ',' ',' ','O',' ',' ',' ',' ',' '],
+         [' ',' ',' ',' ',' ',' ',' ',' ',' '],
+         [' ',' ',' ',' ',' ',' ',' ',' ',' '],
+         [' ',' ',' ',' ',' ',' ',' ',' ',' '],
+         [' ',' ',' ',' ',' ',' ',' ',' ',' '],
          [' ',' ',' ',' ',' ',' ',' ',' ',' '],
          [' ',' ',' ',' ',' ',' ',' ',' ',' '],
          [' ',' ',' ',' ',' ',' ',' ',' ',' ']]
@@ -38,9 +38,7 @@ def printboard(board): #9x9 board
 
 #################validations##################     
    
-def validMove(lastMove, nextMove, current_board, current_quadrants):
-    #print(3*((lastMove[0]%3)+1))
-            
+def validMove(lastMove, nextMove, current_board, current_quadrants):            
     if (current_board[nextMove[0]][nextMove[1]] != ' '):
         return False
     elif (current_quadrants[nextMove[0]/3][nextMove[1]/3] != 0):
@@ -57,19 +55,12 @@ def validMove(lastMove, nextMove, current_board, current_quadrants):
         #print('b')
         return True
     elif (current_quadrants[lastMove[0]%3][lastMove[1]%3] != 0):
-        #print(lastMove, nextMove)
-        #printboard(current_board)
-        #print('c')
-        #print(current_quadrants)
         return True
     elif (nextMove[0] < (3*(lastMove[0] % 3)) or (nextMove[0] >= (3*((lastMove[0]%3)+1)))):
         return False
     elif (nextMove[1] < (3 * (lastMove[1] % 3)) or (nextMove[1] >= (3*((lastMove[1]%3) + 1)))):
         return False
     else:
-        #print(lastMove, nextMove)
-        #printboard(current_board)
-        #print('d')
         return True
 
 def cat(lastMove, current_board, current_quadrants):
@@ -80,26 +71,6 @@ def cat(lastMove, current_board, current_quadrants):
     return True
 
 def checkWin(board, token, current_quadrants):
-    #quadrants = [[False, False, False],[False, False, False],[False,False,False]]
-    #for x in range(0, 9):
-        #for y in range(0, 9):
-            #if (board[x][y] == token):
-                
-                ##check horizontal
-                #if (x%3 == 0 and board[x + 1][y] == token and board[x+2][y] == token):
-                    #quadrants[x/3][y/3] = token
-                    
-                ##check vertical
-                #if (y%3 == 0 and board[x][y+1] == token and board[x][y+2] == token):
-                    #quadrants[x/3][y/3] = token
-                    
-                ##check diagonal
-                #if (x%3 == 1 and y%3 == 1):
-                    #if (board[x-1][y-1] == token and board[x+1][y+1] == token):
-                        #quadrants[x/3][y/3] = token
-                    #elif (board[x+1][y-1] == token and board[x-1][y+1] == token):
-                        #quadrants[x/3][y/3] = token
-                        
     #check quadrants board for win
     for x in range(0,3):
         for y in range(0,3):
@@ -172,10 +143,14 @@ def getAllNextMoves(lastMove, newBoard, current_quadrants):
         for y in range(0,9):
             if (validMove(lastMove, (x,y), newBoard, current_quadrants)):
                 potentialMoves.append((x,y))
+    #print(potentialMoves)
     return potentialMoves
 
-def getComputerMove_naive():
-    return (random.randint(0,8), random.randint(0,8))
+def getComputerMove_naive(lastMove):
+    computerMove = (random.randint(0,8), random.randint(0,8))
+    while (not validMove(lastMove, computerMove, board, quadrants)):
+        computerMove = (random.randint(0,8), random.randint(0,8)) 
+    return computerMove
 
 def getComputerMove_hard(lastMove, computer, player, current_quadrants):
     q = Queue.Queue()
@@ -191,6 +166,7 @@ def getComputerMove_hard(lastMove, computer, player, current_quadrants):
     while (not q.empty()):
         count +=1
         leaf = q.get()
+        #print leaf
         if (count == 5000):
             return leaf[0]
         #print(leaf[0])
@@ -198,26 +174,31 @@ def getComputerMove_hard(lastMove, computer, player, current_quadrants):
         if (checkWin(leaf[1], computer, leaf[4])):
             return leaf[0]
         if (not checkWin(leaf[1], player, leaf[4])):
-            if (leaf[5] < countQuadrants(leaf[4], player) and leaf[2] == player):
-                if (leaf[5] < countQuadrants(leaf[4]) and leaf[2] == computer):
+            #print('test')
+            if ((leaf[5] <= countQuadrants(leaf[4], player) and leaf[2] == player) or (leaf[2] == computer)):
+                #print('test2')
+                if (leaf[5] < countQuadrants(leaf[4], computer) and leaf[2] == computer):
                     return leaf[0]
                 potentialMoves = getAllNextMoves(leaf[3], leaf[1], leaf[4])
                 for each in potentialMoves:
                     new_board = copy.deepcopy(leaf[1])
                     if (leaf[2] == computer):
+                        #print('pushing')
                         new_board[each[0]][each[1]] = player
                         new_quadrants = copy.deepcopy(leaf[4])
                         last_count = countQuadrants(new_quadrants, computer)
                         updateQuadrants(new_quadrants, new_board)
                         q.put((leaf[0], new_board, player, each, new_quadrants, last_count))
                     else:
+                        #print('pushing2')
                         new_board[each[0]][each[1]] = computer
                         new_quadrants = copy.deepcopy(leaf[4])
                         last_count = countQuadrants(new_quadrants, player)
                         updateQuadrants(new_quadrants, new_board)
                         q.put((leaf[0], new_board, computer, each, new_quadrants, last_count))
     if (q.empty()):
-        return getComputerMove_naive()
+        #print("here")
+        return getComputerMove_naive(lastMove)
                 
         
 def countQuadrants(current_quadrants, token):
@@ -226,10 +207,9 @@ def countQuadrants(current_quadrants, token):
         for y in range(0,3):
             if (current_quadrants[x][y] == token):
                 count += 1
+    #print(count)
     return count
     
-
-     
 
 #################gameplay methods###################
   
@@ -251,18 +231,14 @@ def play():
         move = getMove(computerMove, token, board, quadrants)
         board[move[0]][move[1]] = token
         updateQuadrants(quadrants, board)
+        print(quadrants)
         if (checkWin(board, token, quadrants)):
             return token;
         if (cat(move, board, quadrants)):
             return 'C';
         
         printboard(board)
-        #getComputerMove_hard(move, computer)
-        computerMove = getComputerMove_naive()
-        #computerMove = getComputerMove_hard(move, computer, token, quadrants)
-        #print(validMove(move, computerMove, board))
-        while(not validMove(move, computerMove, board)):
-            computerMove = getComputerMove_naive()
+        computerMove = getComputerMove_hard(move, computer, token, quadrants)
         board[computerMove[0]][computerMove[1]] = computer
         updateQuadrants(quadrants, board)
         print("Computer went at position: " + str(computerMove))
@@ -283,9 +259,6 @@ def main():
 ########################################################
         
 main()
-#getComputerMove_hard((3,6), 'X', 'O')
-        
-        
         
         
         
